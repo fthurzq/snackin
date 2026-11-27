@@ -1,0 +1,23 @@
+name = "snek-reminder"
+main = "src/index.ts"
+compatibility_date = "2026-11-26"
+workers_dev = true
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "snek-reminder-db"
+database_id = "c5b3d297-07da-42b2-9e87-d72ac5e8b7b1"
+migrations_dir = "migrations"
+
+[triggers]
+crons = ["*/5 * * * *"]
+
+[vars]
+APP_TIMEZONE = "Asia/Jakarta"
+MONTHLY_MESSAGE_LIMIT = "100"
