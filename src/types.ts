@@ -1,6 +1,8 @@
+
 export interface Env {
   DB: D1Database;
-  FONNTE_TOKEN: string;
+  FONNTE_TOKEN?: string;
+  APP_ENV: "preview" | "production";
   APP_TIMEZONE: string;
   MONTHLY_MESSAGE_LIMIT: string;
 }
