@@ -27,7 +27,7 @@ MONTHLY_MESSAGE_LIMIT = "100"
 [env.preview.vars]
 APP_ENV = "preview"
 APP_TIMEZONE = "Asia/Jakarta"
-MONTHLY_MESSAGE_LIMIT = "100"
+MONTHLY_MESSAGE_LIMIT = "5"
 
 [[env.preview.d1_databases]]
 binding = "DB"
@@ -37,3 +37,7 @@ migrations_dir = "migrations"
 
 [env.preview.triggers]
 crons = ["*/5 * * * *"]
+
+[observability.logs]
+enabled = false
+invocation_logs = true
