@@ -21,3 +21,13 @@ crons = ["*/5 * * * *"]
 [vars]
 APP_TIMEZONE = "Asia/Jakarta"
 MONTHLY_MESSAGE_LIMIT = "100"
+
+# Konfigurasi khusus Preview
+[previews.vars]
+APP_ENV = "preview"
+
+[[previews.d1_databases]]
+binding = "DB"
+database_name = "snek-reminder-preview-db"
+database_id = "9f86986e-7340-4085-a90f-67ee58230e89"
+migrations_dir = "migrations"
