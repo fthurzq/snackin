@@ -143,11 +143,16 @@ function App() {
     const form = event.currentTarget;
     const values = Object.fromEntries(new FormData(form).entries());
     try {
-      await fetch(endpoint, {
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values)
       });
+      if (!response.ok) {
+        const errorBody = (await response.json().catch(() => null)) as { message?: string } | null;
+        showNotice(errorBody?.message || "Data gagal disimpan.");
+        return;
+      }
       form.reset();
       onSuccess?.();
       await refresh();

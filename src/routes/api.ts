@@ -96,13 +96,17 @@ api.get("/reminder-settings", async (c) => {
 });
 
 api.post("/reminder-settings", async (c) => {
-  const body = await c.req.json<{ label?: string; days_before?: number; send_time?: string }>().catch(() => null);
-  if (!body?.label?.trim() || !Number.isInteger(body.days_before) || Number(body.days_before) < 0 || !body.send_time) {
+  const body = await c.req.json<{ label?: string; days_before?: number | string; send_time?: string }>().catch(() => null);
+  // FormData mengirim semua nilai sebagai string, jadi konversi dulu sebelum validasi.
+  const daysBefore = body?.days_before === undefined || body?.days_before === null || body?.days_before === ""
+    ? Number.NaN
+    : Number(body.days_before);
+  if (!body?.label?.trim() || !Number.isInteger(daysBefore) || daysBefore < 0 || !body.send_time) {
     return jsonError("Nama aturan, jumlah hari sebelum kegiatan, dan jam pengiriman wajib diisi.");
   }
   if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(body.send_time)) return jsonError("Format jam harus HH:mm.");
   await c.env.DB.prepare(`INSERT INTO reminder_settings (id, label, days_before, send_time) VALUES (?, ?, ?, ?)`)
-    .bind(makeId(), body.label.trim(), Number(body.days_before), body.send_time).run();
+    .bind(makeId(), body.label.trim(), daysBefore, body.send_time).run();
   return c.json({ success: true, message: "Aturan pengingat berhasil dibuat." }, 201);
 });
 
