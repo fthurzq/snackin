@@ -21,12 +21,12 @@ api.put("/recipients/:id", async (c) => {
   catch (error) { return jsonError(error instanceof Error ? error.message : "Nomor tidak valid."); }
   await c.env.DB.prepare("UPDATE recipients SET name = ?, phone = ? WHERE id = ?")
     .bind(name, normalizedPhone, c.req.param("id")).run();
-  return c.json({ success: true, message: "Anggota keluarga berhasil diupdate." });
+  return c.json({ success: true, message: "Data jamaah berhasil diupdate." });
 });
 
 api.delete("/recipients/:id", async (c) => {
   await c.env.DB.prepare("DELETE FROM recipients WHERE id = ?").bind(c.req.param("id")).run();
-  return c.json({ success: true, message: "Anggota keluarga berhasil dihapus." });
+  return c.json({ success: true, message: "Data jamaah berhasil dihapus." });
 });
 
 api.post("/recipients", async (c) => {
@@ -38,7 +38,7 @@ api.post("/recipients", async (c) => {
   try {
     await c.env.DB.prepare("INSERT INTO recipients (id, name, phone) VALUES (?, ?, ?)")
       .bind(makeId(), body.name.trim(), phone).run();
-    return c.json({ success: true, message: "Anggota keluarga berhasil ditambahkan." }, 201);
+    return c.json({ success: true, message: "Data jamaah berhasil ditambahkan." }, 201);
   } catch {
     return jsonError("Nomor WhatsApp sudah terdaftar atau data tidak valid.", 409);
   }

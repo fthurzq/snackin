@@ -185,10 +185,9 @@ function App() {
       <aside className={`fixed inset-y-0 left-0 z-40 flex w-[228px] flex-col border-r border-line bg-white px-4 transition-transform lg:translate-x-0 ${mobileNav ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
         <div className="flex h-[68px] items-center gap-2.5 border-b border-line px-2">
           <div className="grid h-7 w-7 grid-cols-2 gap-0.5 rounded-md bg-brand p-1"><span className="rounded-[2px] bg-white" /><span className="rounded-[2px] bg-white/70" /><span className="rounded-[2px] bg-white/70" /><span className="rounded-[2px] bg-white" /></div>
-          <span className="text-[15px] font-bold tracking-tight text-slate-900">snackin</span>
+          <span className="text-[15px] font-bold tracking-tight text-slate-900">Snackin</span>
           <button aria-label="Tutup menu" className="ml-auto text-slate-400 lg:hidden" onClick={() => setMobileNav(false)}><Icon name="close" /></button>
         </div>
-        <p className="mb-2 mt-7 px-2 text-[9px] font-semibold uppercase tracking-[.12em] text-slate-400">Ruang keluarga</p>
         <nav className="space-y-1">
           {navItems.map((item) => (
             <button key={item.id} onClick={() => openPage(item.id)} className={`flex h-9 w-full items-center gap-2.5 rounded-md px-2.5 text-left text-[11px] transition ${page === item.id ? "bg-blue-50 font-semibold text-brand" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}>
@@ -207,14 +206,14 @@ function App() {
         <header className="sticky top-0 z-20 flex h-[68px] items-center justify-between border-b border-line bg-white/95 px-5 backdrop-blur md:px-8">
           <div className="flex items-center gap-3">
             <button aria-label="Buka menu" className="text-slate-500 lg:hidden" onClick={() => setMobileNav(true)}><Icon name="menu" /></button>
-            <span className="text-[10px] text-muted">Ruang keluarga / <span className="text-slate-600">Admin</span></span>
+            <span className="text-[10px] text-muted">Asisten Penerobos / <span className="text-slate-600">Admin</span></span>
           </div>
           <div className="hidden items-center gap-2 text-[9px] text-muted sm:flex"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />Asia/Jakarta · WIB</div>
         </header>
 
         <main className="mx-auto max-w-[1180px] px-5 py-6 md:px-8 md:py-7">
           <div className="mb-5">
-            <p className="mb-1.5 text-[10px] text-muted">Ruang keluarga / &nbsp;{activePage.breadcrumb}</p>
+            <p className="mb-1.5 text-[10px] text-muted">Asisten Penerobos / &nbsp;{activePage.breadcrumb}</p>
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div><h1 className="text-[23px] font-bold tracking-[-.035em] text-slate-900">{activePage.title}</h1><p className="mt-1 text-[11px] text-muted">{activePage.subtitle}</p></div>
               {page === "events" && <button className="primary-button" onClick={() => setModal("event")}><Icon name="plus" size={14} />Tambah Jadwal</button>}
