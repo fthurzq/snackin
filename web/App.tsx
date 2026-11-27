@@ -138,31 +138,64 @@ function App() {
     window.setTimeout(() => setNotice(""), 3500);
   }
 
-  async function submitForm(event: FormEvent<HTMLFormElement>, endpoint: string, successMessage: string, onSuccess?: () => void) {
+  async function submitForm(
+    event: FormEvent<HTMLFormElement>,
+    endpoint: string,
+    successMessage: string,
+    onSuccess?: () => void
+  ) {
     event.preventDefault();
     const form = event.currentTarget;
     const formData = new FormData(form);
-    const values = Object.fromEntries(formData.entries());
-    const payload = endpoint === "/api/events"
-      ? {
-          ...values,
-          assignments: formData.getAll("recipient_ids").map((recipientId) => ({
-            recipient_id: String(recipientId),
-            responsibility: String(formData.get(`responsibility_${recipientId}`) ?? "")
-          }))
-        }
-      : values;
+
+    let payload: Record<string, unknown>;
+
+    if (endpoint === "/api/events") {
+      // Bangun payload events secara eksplisit — jangan spread `values`,
+      // supaya field bantu (recipient_ids, responsibility_*) tidak ikut terkirim.
+      const recipientIds = formData.getAll("recipient_ids").map((v) => String(v));
+
+      const assignments = recipientIds.map((id) => ({
+        recipient_id: id,
+        responsibility: String(formData.get(`responsibility_${id}`) ?? "").trim()
+      }));
+
+      payload = {
+        title: String(formData.get("title") ?? "").trim(),
+        event_date: String(formData.get("event_date") ?? ""),
+        event_time: String(formData.get("event_time") ?? ""),
+        location: String(formData.get("location") ?? "").trim() || null,
+        description: String(formData.get("description") ?? "").trim() || null,
+        assignments
+      };
+
+      if (!payload.title || !payload.event_date || !payload.event_time) {
+        showNotice("Nama kegiatan, tanggal, dan waktu wajib diisi.");
+        return;
+      }
+      if (assignments.length === 0) {
+        // Opsional: blokir submit tanpa anggota, atau hapus blok ini jika jadwal boleh kosong.
+        showNotice("Pilih minimal satu anggota untuk jadwal ini.");
+        return;
+      }
+    } else {
+      // Untuk endpoint lain (recipients, reminder-settings), kirim apa adanya.
+      payload = Object.fromEntries(formData.entries());
+    }
+
     try {
       const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
+
       if (!response.ok) {
         const errorBody = (await response.json().catch(() => null)) as { message?: string } | null;
         showNotice(errorBody?.message || "Data gagal disimpan.");
         return;
       }
+
       form.reset();
       onSuccess?.();
       await refresh();

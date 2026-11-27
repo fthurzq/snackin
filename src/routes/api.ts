@@ -54,40 +54,120 @@ api.get("/events", async (c) => {
 });
 
 api.post("/events", async (c) => {
-  const body = await c.req.json<{
-    title?: string; event_date?: string; event_time?: string; location?: string;
-    description?: string; assignments?: Array<{ recipient_id: string; responsibility: string }>;
-  }>().catch(() => null);
+  const body = await c.req
+    .json<{
+      title?: string;
+      event_date?: string;
+      event_time?: string;
+      location?: string;
+      description?: string;
+      assignments?: Array<
+        string | { recipient_id?: string; recipientId?: string; id?: string; responsibility?: string }
+      >;
+      members?: Array<
+        string | { recipient_id?: string; recipientId?: string; id?: string; responsibility?: string }
+      >;
+      anggota?: Array<
+        string | { recipient_id?: string; recipientId?: string; id?: string; responsibility?: string }
+      >;
+    }>()
+    .catch(() => null);
+
   if (!body?.title?.trim() || !body.event_date || !body.event_time) {
     return jsonError("Nama kegiatan, tanggal, dan waktu wajib diisi.");
   }
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(body.event_date) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(body.event_time)) {
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/.test(body.event_date) ||
+    !/^([01]\d|2[0-3]):[0-5]\d$/.test(body.event_time)
+  ) {
     return jsonError("Format tanggal atau waktu tidak valid.");
   }
-  const eventId = makeId();
-  await c.env.DB.prepare(`INSERT INTO events (id, title, event_date, event_time, location, description)
-    VALUES (?, ?, ?, ?, ?, ?)`)
-    .bind(eventId, body.title.trim(), body.event_date, body.event_time, body.location ?? null, body.description ?? null).run();
 
-  for (const item of body.assignments ?? []) {
-    if (!item.recipient_id) continue;
+  // Normalisasi berbagai bentuk input dari frontend.
+  const rawAssignments = (body.assignments ?? body.members ?? body.anggota ?? []) as Array<
+    string | { recipient_id?: string; recipientId?: string; id?: string; responsibility?: string }
+  >;
+
+  const normalized = rawAssignments
+    .map((item) => {
+      if (typeof item === "string") {
+        return { recipient_id: item, responsibility: "" };
+      }
+      return {
+        recipient_id: item.recipient_id ?? item.recipientId ?? item.id ?? "",
+        responsibility: item.responsibility ?? ""
+      };
+    })
+    .filter((item) => item.recipient_id);
+
+  const eventId = makeId();
+
+  await c.env.DB.prepare(
+    `INSERT INTO events (id, title, event_date, event_time, location, description)
+     VALUES (?, ?, ?, ?, ?, ?)`
+  )
+    .bind(
+      eventId,
+      body.title.trim(),
+      body.event_date,
+      body.event_time,
+      body.location ?? null,
+      body.description ?? null
+    )
+    .run();
+
+  // Ambil aturan pengingat sekali saja, bukan di dalam loop anggota.
+  const rules = await c.env.DB.prepare(
+    "SELECT * FROM reminder_settings WHERE is_active = 1"
+  ).all<{ id: string; days_before: number; send_time: string }>();
+
+  let saved = 0;
+  const failures: string[] = [];
+
+  for (const item of normalized) {
     const assignmentId = makeId();
-    await c.env.DB.prepare("INSERT INTO assignments (id, event_id, recipient_id, responsibility) VALUES (?, ?, ?, ?)")
-      .bind(assignmentId, eventId, item.recipient_id, item.responsibility?.trim() ?? "").run();
-    const rules = await c.env.DB.prepare("SELECT * FROM reminder_settings WHERE is_active = 1").all<{
-      id: string; days_before: number; send_time: string;
-    }>();
+    try {
+      await c.env.DB.prepare(
+        "INSERT INTO assignments (id, event_id, recipient_id, responsibility) VALUES (?, ?, ?, ?)"
+      )
+        .bind(
+          assignmentId,
+          eventId,
+          item.recipient_id,
+          item.responsibility?.trim() ?? ""
+        )
+        .run();
+      saved++;
+    } catch (error) {
+      // Mis. FK constraint: recipient_id tidak ada.
+      console.error("Gagal menyimpan assignment:", item, error);
+      failures.push(item.recipient_id);
+      continue;
+    }
+
     for (const rule of rules.results ?? []) {
       const reminderDate = subtractDays(body.event_date, rule.days_before);
       const scheduledAt = jakartaLocalToUtc(reminderDate, rule.send_time);
-      // Do not schedule a reminder whose target time has already passed.
       if (new Date(scheduledAt).getTime() <= Date.now()) continue;
-      await c.env.DB.prepare(`INSERT OR IGNORE INTO reminder_jobs
-        (id, assignment_id, reminder_setting_id, scheduled_at) VALUES (?, ?, ?, ?)`)
-        .bind(makeId(), assignmentId, rule.id, scheduledAt).run();
+      await c.env.DB.prepare(
+        `INSERT OR IGNORE INTO reminder_jobs
+         (id, assignment_id, reminder_setting_id, scheduled_at) VALUES (?, ?, ?, ?)`
+      )
+        .bind(makeId(), assignmentId, rule.id, scheduledAt)
+        .run();
     }
   }
-  return c.json({ success: true, message: "Jadwal berhasil disimpan.", event_id: eventId }, 201);
+
+  return c.json(
+    {
+      success: true,
+      message: "Jadwal berhasil disimpan.",
+      event_id: eventId,
+      assignments_saved: saved,
+      assignments_failed: failures
+    },
+    201
+  );
 });
 
 api.get("/reminder-settings", async (c) => {
