@@ -141,12 +141,22 @@ function App() {
   async function submitForm(event: FormEvent<HTMLFormElement>, endpoint: string, successMessage: string, onSuccess?: () => void) {
     event.preventDefault();
     const form = event.currentTarget;
-    const values = Object.fromEntries(new FormData(form).entries());
+    const formData = new FormData(form);
+    const values = Object.fromEntries(formData.entries());
+    const payload = endpoint === "/api/events"
+      ? {
+          ...values,
+          assignments: formData.getAll("recipient_ids").map((recipientId) => ({
+            recipient_id: String(recipientId),
+            responsibility: String(formData.get(`responsibility_${recipientId}`) ?? "")
+          }))
+        }
+      : values;
     try {
       const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values)
+        body: JSON.stringify(payload)
       });
       if (!response.ok) {
         const errorBody = (await response.json().catch(() => null)) as { message?: string } | null;

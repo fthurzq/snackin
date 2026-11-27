@@ -70,10 +70,10 @@ api.post("/events", async (c) => {
     .bind(eventId, body.title.trim(), body.event_date, body.event_time, body.location ?? null, body.description ?? null).run();
 
   for (const item of body.assignments ?? []) {
-    if (!item.recipient_id || !item.responsibility?.trim()) continue;
+    if (!item.recipient_id) continue;
     const assignmentId = makeId();
     await c.env.DB.prepare("INSERT INTO assignments (id, event_id, recipient_id, responsibility) VALUES (?, ?, ?, ?)")
-      .bind(assignmentId, eventId, item.recipient_id, item.responsibility.trim()).run();
+      .bind(assignmentId, eventId, item.recipient_id, item.responsibility?.trim() ?? "").run();
     const rules = await c.env.DB.prepare("SELECT * FROM reminder_settings WHERE is_active = 1").all<{
       id: string; days_before: number; send_time: string;
     }>();
