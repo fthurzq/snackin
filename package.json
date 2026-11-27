@@ -11,6 +11,9 @@
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
     "db:local": "wrangler d1 migrations apply snek-reminder-db --local",
+    "db:preview": "wrangler d1 migrations apply snek-reminder-preview-db --env preview --remote",
+    "dev:preview": "wrangler dev --env preview --port 8787",
+    "deploy:preview": "wrangler deploy --env preview",
     "db:remote": "wrangler d1 migrations apply snek-reminder-db --remote"
   },
   "dependencies": {
@@ -29,6 +32,6 @@
     "tailwindcss": "^3.4.18",
     "typescript": "^5.9.3",
     "vite": "^7.2.2",
-    "wrangler": "^4.50.0"
+    "wrangler": "^4.168.0"
   }
 }

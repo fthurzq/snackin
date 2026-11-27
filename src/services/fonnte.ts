@@ -1,3 +1,4 @@
+
 import type { Env } from "../types";
 
 interface FonnteResult {
@@ -7,8 +8,33 @@ interface FonnteResult {
   [key: string]: unknown;
 }
 
-export async function sendWhatsApp(env: Env, target: string, message: string): Promise<FonnteResult> {
-  if (!env.FONNTE_TOKEN) throw new Error("FONNTE_TOKEN belum dikonfigurasi.");
+export async function sendWhatsApp(
+  env: Env,
+  target: string,
+  message: string
+): Promise<FonnteResult> {
+
+  // Preview hanya melakukan simulasi pengiriman.
+  if (env.APP_ENV === "preview") {
+    console.log("[PREVIEW] Simulasi pengiriman WhatsApp:", {
+      target,
+      message
+    });
+
+    return {
+      status: true,
+      detail: "Simulasi berhasil. Pesan tidak dikirim ke WhatsApp.",
+      id: "preview-simulation"
+    };
+  }
+
+  if (env.APP_ENV !== "production") {
+    throw new Error("APP_ENV tidak valid. Pengiriman WhatsApp dibatalkan.");
+  }
+
+  if (!env.FONNTE_TOKEN) {
+    throw new Error("FONNTE_TOKEN belum dikonfigurasi.");
+  }
 
   const body = new URLSearchParams({
     target,
@@ -27,15 +53,21 @@ export async function sendWhatsApp(env: Env, target: string, message: string): P
   });
 
   const raw = await response.text();
+
   let result: FonnteResult;
+
   try {
     result = JSON.parse(raw) as FonnteResult;
   } catch {
-    throw new Error(`Respons Fonnte bukan JSON (HTTP ${response.status}).`);
+    throw new Error(
+      `Respons Fonnte bukan JSON (HTTP ${response.status}).`
+    );
   }
 
   if (!response.ok || result.status !== true) {
-    throw new Error(String(result.detail ?? `Fonnte gagal (HTTP ${response.status}).`));
+    throw new Error(
+      String(result.detail ?? `Fonnte gagal (HTTP ${response.status}).`)
+    );
   }
 
   return result;
