@@ -65,10 +65,10 @@ interface AppData {
 }
 
 const pageMeta: Record<Page, { title: string; subtitle: string; breadcrumb: string }> = {
-  dashboard: { title: "Dashboard", subtitle: "Ringkasan kegiatan dan pengingat keluarga Anda.", breadcrumb: "Dashboard" },
-  events: { title: "Jadwal Kegiatan", subtitle: "Kelola kegiatan keluarga dan pembagian tanggung jawab.", breadcrumb: "Jadwal Kegiatan" },
-  members: { title: "Data Jamaah", subtitle: "Daftar anggota keluarga yang menerima pengingat.", breadcrumb: "Data Jamaah" },
-  reminders: { title: "Pengaturan Pengingat", subtitle: "Tentukan sendiri kapan keluarga menerima pengingat.", breadcrumb: "Pengaturan Pengingat" },
+  dashboard: { title: "Dashboard", subtitle: "Ringkasan kegiatan dan pengingat jamaah Anda.", breadcrumb: "Dashboard" },
+  events: { title: "Jadwal Kegiatan", subtitle: "Kelola kegiatan jamaah dan pembagian tanggung jawab.", breadcrumb: "Jadwal Kegiatan" },
+  members: { title: "Data Jamaah", subtitle: "Daftar keluarga jamaah yang menerima pengingat.", breadcrumb: "Data Jamaah" },
+  reminders: { title: "Pengaturan Pengingat", subtitle: "Tentukan sendiri kapan jamaah menerima pengingat.", breadcrumb: "Pengaturan Pengingat" },
   history: { title: "Riwayat Pengiriman", subtitle: "Pantau status pesan pengingat yang telah dikirim.", breadcrumb: "Riwayat Pengiriman" },
   settings: { title: "Pengaturan Aplikasi", subtitle: "Atur informasi konfirmasi dan isi pesan pengingat.", breadcrumb: "Pengaturan Aplikasi" }
 };
@@ -197,7 +197,7 @@ function App() {
         </nav>
         <div className="mt-auto border-t border-line px-2 pb-5 pt-4">
           <p className="text-[10px] font-semibold text-slate-800">Administrator</p>
-          <p className="mt-1 truncate text-[9px] text-muted">admin@keluarga.id</p>
+          <p className="mt-1 truncate text-[9px] text-muted">admin@jamaah.id</p>
           <button className="mt-3 text-[10px] text-slate-500 hover:text-brand">↪ &nbsp;Keluar</button>
         </div>
       </aside>
@@ -217,7 +217,7 @@ function App() {
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div><h1 className="text-[23px] font-bold tracking-[-.035em] text-slate-900">{activePage.title}</h1><p className="mt-1 text-[11px] text-muted">{activePage.subtitle}</p></div>
               {page === "events" && <button className="primary-button" onClick={() => setModal("event")}><Icon name="plus" size={14} />Tambah Jadwal</button>}
-              {page === "members" && <button className="primary-button" onClick={() => setModal("member")}><Icon name="plus" size={14} />Tambah Anggota</button>}
+              {page === "members" && <button className="primary-button" onClick={() => setModal("member")}><Icon name="plus" size={14} />Tambah Keluarga</button>}
             </div>
           </div>
 
@@ -234,10 +234,10 @@ function App() {
       </div>
 
       {notice && <div role="status" className="fixed bottom-5 right-5 z-50 flex max-w-sm items-center gap-2 rounded-lg bg-slate-900 px-4 py-3 text-xs text-white shadow-xl"><span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500"><Icon name="check" size={12} /></span>{notice}</div>}
-      {modal && <Modal title={modal === "event" ? "Tambah jadwal kegiatan" : "Tambah anggota keluarga"} onClose={() => setModal(null)}>
+      {modal && <Modal title={modal === "event" ? "Tambah jadwal kegiatan" : "Tambah keluarga jamaah"} onClose={() => setModal(null)}>
         {modal === "event"
           ? <EventForm members={data.members} onCancel={() => setModal(null)} onSubmit={(event) => void submitForm(event, "/api/events", "Jadwal kegiatan berhasil disimpan.", () => setModal(null))} />
-          : <MemberForm onCancel={() => setModal(null)} onSubmit={(event) => void submitForm(event, "/api/recipients", "Anggota keluarga berhasil ditambahkan.", () => setModal(null))} />}
+          : <MemberForm onCancel={() => setModal(null)} onSubmit={(event) => void submitForm(event, "/api/recipients", "Keluarga jamaah berhasil ditambahkan.", () => setModal(null))} />}
       </Modal>}
     </div>
   );

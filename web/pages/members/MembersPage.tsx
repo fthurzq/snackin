@@ -11,15 +11,15 @@ export default function MembersPage({ members, onAdd, onEdit, onDelete }: {
 }) {
   return <section className="card">
     <div className="mb-4">
-      <h2 className="text-[15px] font-semibold">Anggota keluarga</h2>
-      <p className="mt-1 text-[10px] text-muted">{members.length} anggota terdaftar</p>
+      <h2 className="text-[15px] font-semibold">Keluarga jamaah</h2>
+      <p className="mt-1 text-[10px] text-muted">{members.length} keluarga terdaftar</p>
     </div>
     {members.length ? (
       <div className="overflow-x-auto">
         <table className="data-table">
           <thead>
             <tr>
-              <th>Nama anggota</th>
+              <th>Nama keluarga</th>
               <th>Nomor WhatsApp</th>
               <th>Status</th>
               <th style={{ width: 180 }}>Aksi</th>
@@ -69,13 +69,13 @@ export default function MembersPage({ members, onAdd, onEdit, onDelete }: {
       </div>
     ) : (
       <EmptyState
-        title="Belum ada anggota keluarga"
-        detail="Tambahkan anggota agar mereka bisa menerima pengingat kegiatan."
+        title="Belum ada keluarga jamaah"
+        detail="Tambahkan keluarga agar mereka bisa menerima pengingat kegiatan."
       />
     )}
     {!members.length && (
       <button className="primary-button mx-auto mt-4" onClick={onAdd}>
-        <Icon name="plus" size={13} />Tambah Anggota
+        <Icon name="plus" size={13} />Tambah Keluarga
       </button>
     )}
   </section>;

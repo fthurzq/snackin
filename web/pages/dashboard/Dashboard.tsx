@@ -18,7 +18,7 @@ export default function Dashboard({ data, upcoming, onPage, onAddEvent, onAddMem
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Total jadwal kegiatan" value={total} foot="Tahun ini" icon="calendar" tone="blue" />
         <StatCard label="Kegiatan mendatang" value={upcoming.length} foot={`${upcomingThisMonth} kegiatan bulan ini`} icon="clock" tone="violet" />
-        <StatCard label="Anggota keluarga" value={data.members.length} foot={`${data.members.filter((m: any) => m.is_active).length} anggota aktif`} icon="users" tone="sky" />
+        <StatCard label="Keluarga jamaah" value={data.members.length} foot={`${data.members.filter((m: any) => m.is_active).length} keluarga aktif`} icon="users" tone="sky" />
         <StatCard label="WhatsApp terkirim" value={data.sent} foot={`Dari ${data.limit} pesan bulan ini`} icon="send" tone="amber" />
       </div>
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(270px,.95fr)]">
@@ -44,7 +44,7 @@ export default function Dashboard({ data, upcoming, onPage, onAddEvent, onAddMem
               ))}
             </div>
           ) : (
-            <EmptyState title="Belum ada jadwal mendatang" detail="Tambahkan kegiatan keluarga untuk mulai mengatur pengingat." />
+            <EmptyState title="Belum ada jadwal mendatang" detail="Tambahkan kegiatan jamaah untuk mulai mengatur pengingat." />
           )}
         </section>
         <section className="card">
@@ -88,7 +88,7 @@ export default function Dashboard({ data, upcoming, onPage, onAddEvent, onAddMem
               <Icon name="calendar" size={13} />Lihat Jadwal Kegiatan
             </button>
             <button className="secondary-button w-full justify-start" onClick={onAddMember}>
-              <Icon name="users" size={13} />Tambah Anggota Keluarga
+              <Icon name="users" size={13} />Tambah Keluarga Jamaah
             </button>
           </div>
           <p className="mt-4 border-t border-line pt-3 text-[9px] leading-4 text-muted">
