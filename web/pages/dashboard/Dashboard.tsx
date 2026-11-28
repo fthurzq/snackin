@@ -12,9 +12,20 @@ export default function Dashboard({ data, upcoming, onPage, onAddEvent, onAddMem
   const upcomingThisMonth = upcoming.filter((event: any) => event.event_date.startsWith(currentDate.slice(0, 7))).length;
   const quotaPercent = data.limit > 0 ? Math.min(100, Math.round((data.sent / data.limit) * 100)) : 0;
   const recentLogs = data.logs.slice(0, 4);
+  const pendingJobs = (data.jobs || []).filter((job: any) => job.status === "pending" || job.status === "sending");
+  const failedJobs = (data.jobs || []).filter((job: any) => job.status === "failed");
   
   return (
     <div className="space-y-4">
+      {failedJobs.length > 0 && (
+        <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3">
+          <p className="text-[11px] leading-4 text-rose-800">
+            <span className="font-semibold">{failedJobs.length} pengingat gagal dikirim.</span>{" "}
+            Periksa kolom detail pada menu Pengaturan Pengingat, lalu pastikan perangkat WhatsApp tersambung di Fonnte.
+          </p>
+          <button className="text-[10px] font-semibold text-rose-700 underline" onClick={() => onPage("reminders")}>Lihat detail</button>
+        </div>
+      )}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Total jadwal kegiatan" value={total} foot="Tahun ini" icon="calendar" tone="blue" />
         <StatCard label="Kegiatan mendatang" value={upcoming.length} foot={`${upcomingThisMonth} kegiatan bulan ini`} icon="clock" tone="violet" />
@@ -65,14 +76,27 @@ export default function Dashboard({ data, upcoming, onPage, onAddEvent, onAddMem
             </div>
           )}
           {quotaPercent < 80 && <p className="mt-3 text-[9px] text-muted">Kuota pesan masih tersedia untuk pengingat berikutnya.</p>}
+          <p className="mt-2 text-[9px] text-muted">{pendingJobs.length} pengingat dijadwalkan menunggu waktu kirim.</p>
         </section>
       </div>
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(270px,.95fr)]">
         <section className="card">
           <SectionTitle title="Riwayat pengiriman terbaru" action="Lihat semua" onAction={() => onPage("history")} />
           {recentLogs.length ? (
-            <div>
-              <StatusBadge status="success" />
+            <div className="divide-y divide-line">
+              {recentLogs.map((log: any) => (
+                <div key={log.id} className="flex items-start justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+                  <div className="min-w-0">
+                    <p className="truncate text-[11px] font-semibold text-slate-800">{log.recipient_name}</p>
+                    <p className="mt-0.5 truncate text-[9px] text-muted">{log.event_title}</p>
+                    {log.error_message && <p className="mt-1 text-[9px] leading-4 text-rose-600">{log.error_message}</p>}
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <StatusBadge status={log.status === "success" ? "Berhasil" : "Gagal"} />
+                    <p className="mt-1 text-[9px] text-muted">{formatTimestamp(log.sent_at)}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
             <EmptyState title="Belum ada riwayat pengiriman" detail="Pesan yang terkirim akan muncul di sini." />

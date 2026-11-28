@@ -49,6 +49,18 @@ interface MessageLog {
   error_message: string | null;
 }
 
+interface ReminderJob {
+  id: string;
+  status: "pending" | "sending" | "sent" | "failed";
+  attempts: number;
+  scheduled_at: string;
+  last_error: string | null;
+  sent_at: string | null;
+  setting_label: string;
+  recipient_name: string;
+  event_title: string;
+}
+
 interface AppSettings {
   confirmation_phone?: string;
   message_template?: string;
@@ -59,6 +71,7 @@ interface AppData {
   members: Member[];
   rules: ReminderRule[];
   logs: MessageLog[];
+  jobs: ReminderJob[];
   settings: AppSettings;
   sent: number;
   limit: number;
@@ -82,7 +95,7 @@ const navItems: { id: Page; label: string; icon: IconName }[] = [
   { id: "settings", label: "Pengaturan Aplikasi", icon: "settings" }
 ];
 
-const emptyData: AppData = { events: [], members: [], rules: [], logs: [], settings: {}, sent: 0, limit: 100 };
+const emptyData: AppData = { events: [], members: [], rules: [], logs: [], jobs: [], settings: {}, sent: 0, limit: 100 };
 const defaultTemplate = "Assalamu’alaikum {nama_penerima}. Kami mengingatkan bahwa {nama_kegiatan} akan dilaksanakan pada {tanggal} pukul {waktu}, bertempat di {lokasi}.\n\nTanggung jawab konsumsi: {tanggung_jawab}.\n\nJika berhalangan atau ingin konfirmasi, silakan menghubungi {nomor_konfirmasi}. Terima kasih.";
 
 function App() {
@@ -98,11 +111,12 @@ function App() {
     setLoading(true);
     setError("");
     try {
-      const [eventsRes, membersRes, rulesRes, logsRes, settingsRes, usageRes] = await Promise.all([
+      const [eventsRes, membersRes, rulesRes, logsRes, jobsRes, settingsRes, usageRes] = await Promise.all([
         fetch("/api/events"),
         fetch("/api/recipients"),
         fetch("/api/reminder-settings"),
         fetch("/api/message-logs"),
+        fetch("/api/reminder-jobs"),
         fetch("/api/settings"),
         fetch("/api/message-usage")
       ]);
@@ -110,6 +124,7 @@ function App() {
       const members = (await membersRes.json()) as { data: any };
       const rules = (await rulesRes.json()) as { data: any };
       const logs = (await logsRes.json()) as { data: any };
+      const jobs = (await jobsRes.json()) as { data: any };
       const settings = (await settingsRes.json()) as { data: any };
       const usage = (await usageRes.json()) as { sent: number; limit: number };
       setData({
@@ -117,6 +132,7 @@ function App() {
         members: members.data || members,
         rules: rules.data || rules,
         logs: logs.data || logs,
+        jobs: Array.isArray(jobs.data) ? jobs.data : [],
         settings: settings.data || settings,
         sent: usage.sent || 0,
         limit: usage.limit || 100
@@ -190,16 +206,44 @@ function App() {
         body: JSON.stringify(payload)
       });
 
+      const body = (await response.json().catch(() => null)) as {
+        message?: string;
+        assignments_saved?: number;
+        assignments_failed?: string[];
+        reminder_jobs?: number;
+        created_jobs?: number;
+      } | null;
+
       if (!response.ok) {
-        const errorBody = (await response.json().catch(() => null)) as { message?: string } | null;
-        showNotice(errorBody?.message || "Data gagal disimpan.");
+        showNotice(body?.message || "Data gagal disimpan.");
         return;
       }
 
       form.reset();
       onSuccess?.();
       await refresh();
-      showNotice(successMessage);
+
+      // Tampilkan hasil penjadwalan, bukan sekadar pesan sukses generik.
+      const details: string[] = [];
+      if (endpoint === "/api/events") {
+        if (typeof body?.assignments_saved === "number") details.push(`${body.assignments_saved} keluarga ditugaskan`);
+        const failedAssignments = Array.isArray(body?.assignments_failed) ? body.assignments_failed.length : 0;
+        if (failedAssignments) details.push(`${failedAssignments} keluarga gagal disimpan`);
+        if (typeof body?.reminder_jobs === "number") {
+          details.push(
+            body.reminder_jobs
+              ? `${body.reminder_jobs} pengingat dijadwalkan`
+              : data.rules.length
+                ? "tidak ada pengingat terjadwal"
+                : "belum ada aturan pengingat"
+          );
+        }
+      } else if (endpoint === "/api/reminder-settings" && typeof body?.created_jobs === "number") {
+        if (body.created_jobs) details.push(`${body.created_jobs} pengingat ditambahkan ke kegiatan mendatang`);
+      }
+
+      const headline = body?.message || successMessage;
+      showNotice(details.length ? `${headline} ${details.join(" · ")}` : headline);
     } catch (submitError) {
       showNotice(submitError instanceof Error ? submitError.message : "Data gagal disimpan.");
     }
@@ -214,6 +258,36 @@ function App() {
       showNotice("Pengaturan berhasil disimpan.");
     } catch (saveError) {
       showNotice(saveError instanceof Error ? saveError.message : "Pengaturan gagal disimpan.");
+    }
+  }
+
+  async function resyncJobs() {
+    try {
+      const response = await fetch("/api/reminders/resync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}"
+      });
+      const body = (await response.json().catch(() => null)) as { success?: boolean; message?: string } | null;
+      await refresh();
+      showNotice(body?.message || (body?.success ? "Penjadwalan ulang selesai." : "Gagal menjadwalkan ulang pengingat."));
+    } catch (resyncError) {
+      showNotice(resyncError instanceof Error ? resyncError.message : "Gagal menjadwalkan ulang pengingat.");
+    }
+  }
+
+  async function retryJob(jobId: string) {
+    try {
+      const response = await fetch(`/api/reminder-jobs/${jobId}/retry`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}"
+      });
+      const body = (await response.json().catch(() => null)) as { success?: boolean; message?: string } | null;
+      await refresh();
+      showNotice(body?.message || (response.ok ? "Pengingat dijadwalkan ulang." : "Pengingat gagal dijadwalkan ulang."));
+    } catch (retryError) {
+      showNotice(retryError instanceof Error ? retryError.message : "Pengingat gagal dijadwalkan ulang.");
     }
   }
 
@@ -270,13 +344,13 @@ function App() {
           {page === "dashboard" && <Dashboard data={data} upcoming={upcoming} onPage={openPage} onAddEvent={() => setModal("event")} onAddMember={() => setModal("member")} />}
           {page === "events" && <EventsPage events={data.events} onAdd={() => setModal("event")} />}
           {page === "members" && <MembersPage members={data.members} onAdd={() => setModal("member")} onEdit={(_member: any) => alert("Edit fitur akan segera tersedia")} onDelete={(_memberId: string) => { if(confirm("Yakin ingin menghapus?")) location.reload(); }} />}
-          {page === "reminders" && <RemindersPage rules={data.rules} onSubmit={(event) => void submitForm(event, "/api/reminder-settings", "Pengingat berhasil ditambahkan.")} />}
+          {page === "reminders" && <RemindersPage rules={data.rules} jobs={data.jobs} onSubmit={(event) => void submitForm(event, "/api/reminder-settings", "Pengingat berhasil ditambahkan.")} onResync={() => void resyncJobs()} onRetry={(jobId) => void retryJob(jobId)} />}
           {page === "history" && <HistoryPage logs={data.logs} />}
           {page === "settings" && <SettingsPage settings={data.settings} onSubmit={(event) => void saveSettings(event)} />}
         </main>
       </div>
 
-      {notice && <div role="status" className="fixed bottom-5 right-5 z-50 flex max-w-sm items-center gap-2 rounded-lg bg-slate-900 px-4 py-3 text-xs text-white shadow-xl"><span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500"><Icon name="check" size={12} /></span>{notice}</div>}
+      {notice && <div role="status" className="fixed bottom-5 right-5 z-50 flex max-w-md items-start gap-2 rounded-lg bg-slate-900 px-4 py-3 text-xs text-white shadow-xl"><span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500"><Icon name="check" size={12} /></span>{notice}</div>}
       {modal && <Modal title={modal === "event" ? "Tambah jadwal kegiatan" : "Tambah keluarga jamaah"} onClose={() => setModal(null)}>
         {modal === "event"
           ? <EventForm members={data.members} onCancel={() => setModal(null)} onSubmit={(event) => void submitForm(event, "/api/events", "Jadwal kegiatan berhasil disimpan.", () => setModal(null))} />
